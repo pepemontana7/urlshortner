@@ -1,6 +1,7 @@
-package urlshort
+package urlshortner
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -12,7 +13,20 @@ import (
 // http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
 	//	TODO: Implement this...
-	return nil
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Map Handler", r.RequestURI)
+		u, ok := pathsToUrls[r.RequestURI]
+		fmt.Println(u)
+		if !ok {
+			fmt.Println("Map Handler: no redirect for", r.RequestURI)
+			fallback.ServeHTTP(w, r)
+			return
+		}
+		http.Redirect(w, r, u, 301)
+
+	}
+
 }
 
 // YAMLHandler will parse the provided YAML and then return
@@ -33,5 +47,8 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 // a mapping of paths to urls.
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	// TODO: Implement this...
-	return nil, nil
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Yaml Handler")
+
+	}, nil
 }
