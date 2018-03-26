@@ -3,6 +3,8 @@ package urlshortner
 import (
 	"fmt"
 	"net/http"
+
+	"gopkg.in/yaml.v2"
 )
 
 // MapHandler will return an http.HandlerFunc (which also
@@ -47,8 +49,39 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 // a mapping of paths to urls.
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	// TODO: Implement this...
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Yaml Handler")
+	parsedYaml, err := parseYAML(yml)
+	if err != nil {
+		return nil, err
+	}
+	pathMap := buildMap(parsedYaml)
 
-	}, nil
+	return MapHandler(pathMap, fallback), nil
+}
+
+type pathsYaml struct {
+	path string
+	url  string
+}
+
+func parseYAML(y []byte) ([]pathsYaml, error) {
+	var b []pathsYaml
+
+	err := yaml.Unmarshal([]byte(y), &b)
+	if err != nil {
+		fmt.Printf("cannot unmarshal data: %v", err)
+		return nil, err
+	}
+	for _, i := range b {
+		fmt.Println(i.url, i.path)
+	}
+	return b, nil
+}
+
+func buildMap(py []pathsYaml) map[string]string {
+	mpy := map[string]string{}
+	for _, y := range py {
+		mpy[y.path] = y.url
+	}
+	fmt.Println(mpy)
+	return mpy
 }
