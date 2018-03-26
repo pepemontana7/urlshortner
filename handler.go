@@ -5,8 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pepemontana7/urlshortner/dao"
 	"gopkg.in/yaml.v2"
 )
+
+type paths struct {
+	Path string
+	Url  string
+}
 
 // MapHandler will return an http.HandlerFunc (which also
 // implements http.Handler) that will attempt to map any
@@ -66,14 +72,20 @@ func JSONHandler(j []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	pathMap := buildMap(parsedJson)
 	return MapHandler(pathMap, fallback), nil
 }
+func DBHandler(d *dao.PathsDAO, fallback http.Handler) (http.HandlerFunc, error) {
+	fmt.Println("DB Handler..")
 
-type pathsYaml struct {
-	path string
-	url  string
-}
-type paths struct {
-	Path string
-	Url  string
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("DB Handler", r.RequestURI)
+		path, err := d.FindByPath(r.RequestURI)
+		if err != nil {
+			fmt.Println("error infind by path")
+			fallback.ServeHTTP(w, r)
+			return
+		}
+		fmt.Println("db path ", path)
+		http.Redirect(w, r, path.URL, 301)
+	}, nil
 }
 
 func parseYAML(y []byte) ([]paths, error) {
