@@ -1,6 +1,7 @@
 package urlshortner
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -26,9 +27,7 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 			return
 		}
 		http.Redirect(w, r, u, 301)
-
 	}
-
 }
 
 // YAMLHandler will parse the provided YAML and then return
@@ -54,7 +53,17 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 		return nil, err
 	}
 	pathMap := buildMap(parsedYaml)
+	return MapHandler(pathMap, fallback), nil
+}
 
+func JSONHandler(j []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	// TODO: Implement this...
+	parsedJson, err := parseJSON(j)
+	if err != nil {
+		return nil, err
+	}
+
+	pathMap := buildMap(parsedJson)
 	return MapHandler(pathMap, fallback), nil
 }
 
@@ -62,26 +71,47 @@ type pathsYaml struct {
 	path string
 	url  string
 }
+type paths struct {
+	Path string
+	Url  string
+}
 
-func parseYAML(y []byte) ([]pathsYaml, error) {
-	var b []pathsYaml
+func parseYAML(y []byte) ([]paths, error) {
+	//fmt.Println("yml: data ", string(y))
 
-	err := yaml.Unmarshal([]byte(y), &b)
+	var b []paths
+
+	err := yaml.Unmarshal(y, &b)
+	if err != nil {
+		fmt.Printf("cannot unmarshal data: %v", err)
+		return nil, err
+	}
+
+	for _, i := range b {
+		fmt.Println("yml: ", i, i.Url, i.Path)
+	}
+	return b, nil
+}
+
+func parseJSON(j []byte) ([]paths, error) {
+	var b []paths
+	fmt.Println(b)
+	err := json.Unmarshal(j, &b)
 	if err != nil {
 		fmt.Printf("cannot unmarshal data: %v", err)
 		return nil, err
 	}
 	for _, i := range b {
-		fmt.Println(i.url, i.path)
+		fmt.Println("json: ", i, i.Url, i.Path)
 	}
 	return b, nil
 }
 
-func buildMap(py []pathsYaml) map[string]string {
+func buildMap(py []paths) map[string]string {
 	mpy := map[string]string{}
 	for _, y := range py {
-		mpy[y.path] = y.url
+		mpy[y.Path] = y.Url
 	}
-	fmt.Println(mpy)
+	fmt.Println("mpy: ", mpy)
 	return mpy
 }
